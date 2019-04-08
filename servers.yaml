@@ -1,0 +1,36 @@
+---
+defaults:
+  box: centos-7
+  ram: 2048
+  roles:
+    - minions
+  network:
+    :netmask:    255.255.255.0
+    :bridge:     eno1
+    :type:       public_network
+    :default-gw: 192.168.1.254
+
+servers:
+- name: k8s-master
+  ram:  32768
+  cpus: 4
+  roles:
+    - master
+  network:
+    - :ip:         192.168.1.16
+
+- name: k8s-gateway
+  ram:  4096
+  roles:
+    - gateway
+  network:
+    - :ip:         192.168.1.1
+
+- name: k8s-node-01
+  network:
+    - :ip:         192.168.1.32
+
+- name: k8s-node-02
+  network:
+    - :ip:         192.168.1.33
+

@@ -1,0 +1,24 @@
+---
+- name: address resolution
+  hosts: all
+  tasks:
+    - set_fact:
+        host_address: "{{ hostvars[inventory_hostname]['ansible_' + ifname]['ipv4']['address'] }}"
+      when: "'ipv4' in hostvars[inventory_hostname]['ansible_' + ifname]"
+
+    - set_fact:
+        host_address: "{{ ansible_vhost0.ipv4.address }}"
+      when: "'ansible_vhost0' in hostvars[inventory_hostname]"
+
+    - name: Add entries to /etc/hosts
+      become:        true
+      become_user:   root
+      become_method: sudo
+      lineinfile:
+        dest=/etc/hosts
+        regexp="^{{ hostvars[item]['host_address'] + ' ' }}"
+        line="{{ hostvars[item]['host_address'] }} {{ item }}"
+      with_items: "{{ groups['all'] }}"
+
+  vars:
+    ifname: 'enp0s8'

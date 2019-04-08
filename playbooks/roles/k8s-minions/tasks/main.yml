@@ -1,0 +1,65 @@
+---
+# tasks file for minions
+
+- include_role:
+    name: k8s-common
+
+- name: set firewall filters for k8s master
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_list:
+    - "10250/tcp"
+    - "10255/tcp"
+    - "30000-32767/tcp"
+    - "6783/tcp"
+
+- name: Set bridge-nf-call-iptables
+  shell: echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+- name: Are we in a vagrant environment?
+  stat:
+    path: /vagrant/admin.conf
+  register: vagrant_p
+
+- name: mkdir ~vagrant/.kube 
+  file:
+    path:  /home/vagrant/.kube
+    state: directory
+    owner: vagrant
+    group: vagrant
+    mode: 0775
+  when: vagrant_p.stat.exists
+
+- name: copy admin.conf to ~vagrant/.kube/config so kubectl can work as is
+  copy:
+    src:  /vagrant/admin.conf
+    dest: /home/vagrant/.kube/config
+    owner: vagrant
+    group: vagrant
+    remote_src: yes
+  when: vagrant_p.stat.exists
+
+- name: mkdir ~root/.kube 
+  file:
+    path:  /root/.kube
+    state: directory
+    owner: root
+    group: root
+    mode:  0775
+
+- name: copy admin.conf to ~/.kube/config so kubectl can work as is
+  copy:
+    src:  "{{ playbook_dir }}/admin.conf"
+    dest: /root/.kube/config
+    owner: root
+    group: root
+    mode:  0775
+
+- name: Is kubernetes running
+  shell: kubectl get nodes
+
+- name: if we are, then join the k8s cluster
+  shell: eval $(kubeadm token create --print-join-command)

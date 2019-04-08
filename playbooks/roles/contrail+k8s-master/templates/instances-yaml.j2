@@ -1,0 +1,71 @@
+#
+#  Generated automatically on {{ hostvars[inventory_hostname].ansible_date_time.iso8601 }}
+#  from {{ hostname }}:{{ directory }}
+#
+global_configuration:
+  CONTAINER_REGISTRY:         opencontrailnightly
+  REGISTRY_PRIVATE_INSECURE:  true
+provider_config:
+  bms:
+{% if root_password is defined %}
+    ssh_pwd:      "{{ root_password }}"
+{% endif %}
+    ssh_user:     root
+    domainsuffix: local
+instances:
+{% for name in hostvars[inventory_hostname].groups.master     %}
+{%   if hostvars[name].ansible_vhost0 is defined              %}
+{%     set addr = hostvars[name].ansible_vhost0.ipv4.address  %}
+{%   else                                                     %}
+{%     set addr = hostvars[name].ansible_default_ipv4.address %}
+{%   endif                                                    %}
+  bms_{{ '%08X' | format(addr | ipaddr('int')) }}:
+    provider: bms
+    ip:       "{{ addr }}"
+    roles:
+        config_database:
+        config:
+        control:
+        analytics_database:
+        analytics_snmp:
+        analytics_alarm:
+        analytics:
+        webui:
+        k8s_master:
+        kubemanager:
+        k8s_node:
+        vrouter:
+{% endfor                                                     %}
+{% for name in hostvars[inventory_hostname].groups.gateway    %}
+{%   if hostvars[name].ansible_vhost0 is defined              %}
+{%     set addr = hostvars[name].ansible_vhost0.ipv4.address  %}
+{%   else                                                     %}
+{%     set addr = hostvars[name].ansible_default_ipv4.address %}
+{%   endif                                                    %}
+  bms_{{ '%08X' | format(addr | ipaddr('int')) }}:
+    provider: bms
+    ip:       "{{ addr }}"
+    roles:
+        k8s_node:
+        vrouter:
+{% endfor                                                     %}
+{% for name in hostvars[inventory_hostname].groups.minions    %}
+{%   if hostvars[name].ansible_vhost0 is defined              %}
+{%     set addr = hostvars[name].ansible_vhost0.ipv4.address  %}
+{%   else                                                     %}
+{%     set addr = hostvars[name].ansible_default_ipv4.address %}
+{%   endif                                                    %}
+  bms_{{ '%08X' | format(addr | ipaddr('int')) }}:
+    provider: bms
+    ip:       "{{ addr }}"
+    roles:
+        k8s_node:
+        vrouter:
+{% endfor %}
+contrail_configuration:
+  CLOUD_ORCHESTRATOR: kubernetes
+  CONTRAIL_VERSION:   master-latest
+{%   if hostvars[inventory_hostname].ansible_vhost0 is undefined %}
+  VROUTER_GATEWAY:    "{{ hostvars[inventory_hostname].ansible_default_ipv4.gateway }}"
+{%   endif                                                         %}
+  RABBITMQ_NODE_PORT: 5673

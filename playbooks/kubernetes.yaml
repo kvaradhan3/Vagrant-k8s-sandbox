@@ -1,0 +1,24 @@
+---
+- hosts: all
+  gather_facts: yes
+  
+- hosts:        master
+  become:           true
+  become_user:      root
+  become_method:    sudo
+  roles:
+    - k8s-master
+
+- hosts:        minions
+  become:           true
+  become_user:      root
+  become_method:    sudo
+  roles:
+    - k8s-minions
+
+- hosts:        gateway
+  become:           true
+  become_user:      root
+  become_method:    sudo
+  roles:
+    - k8s-gateway

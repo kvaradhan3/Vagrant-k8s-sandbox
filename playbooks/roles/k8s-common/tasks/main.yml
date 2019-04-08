@@ -1,0 +1,50 @@
+---
+- selinux:
+    policy: targeted
+    state: permissive
+
+- name: Add kubernetes repo to yum
+  yum_repository:
+    name:         Kubernetes
+    description:  kubernetes repository
+    file:         kubernetes
+    baseurl:      https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    enabled:       yes
+    gpgcheck:      yes
+    repo_gpgcheck: yes
+    gpgkey:
+      - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: install kubernetes tools (kubeadm and docker)
+  yum:
+    name:
+      - kubeadm
+      - docker
+      - python-pip
+      - python-urllib3
+      - python-requests
+
+- name: Start/Enable Docker Services
+  service:
+    name: docker
+    daemon_reload: yes
+    state: started
+    enabled: yes
+
+- name: disable swap
+  shell: swapoff -a
+
+- name: disable swap permanently
+  replace:
+    path: /etc/fstab
+    regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+    replace: '#\1\2\3swap\4'
+    backup: yes
+
+- name: start/enable kubelet
+  service:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+    enabled: yes

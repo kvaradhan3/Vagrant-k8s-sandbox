@@ -1,0 +1,23 @@
+---
+# tasks to start flannel
+- set_fact:
+    dirname: "coreos/flannel/master/Documentation"
+
+- name: fetch the flannel config file
+  get_url:
+    url: "https://{{ cni_repo }}/{{ dirname }}/kube-flannel.yml"
+    dest: /root/kube-flannel.yml
+
+- set_fact:
+    host: "{{ hostvars[inventory_hostname].ansible_default_ipv4 }}"
+  
+- name: patch iface=... to kube-flannel.yml
+  lineinfile:
+    dest="/root/kube-flannel.yml"
+    regexp="        - --kube-subnet-mgr"
+    line="        - --iface={{ host.interface }}"
+    insertafter="        - --kube-subnet-mgr"
+  when: iface != ""
+
+- name: apply the CNI
+  shell: kubectl apply -f /root/kube-flannel.yml

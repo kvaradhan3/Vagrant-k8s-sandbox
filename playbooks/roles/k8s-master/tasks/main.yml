@@ -1,0 +1,103 @@
+---
+- name: check if have the needed vars
+  fail: msg="unspecified repo userid/password in roles/master/vars for contrail as CNI, exiting"
+  when: hub_password == "unspecified" and cni == "contrail"
+
+- include_role:
+    name: k8s-common
+
+- set_fact:
+    K8S_MASTER_IP: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+
+- name: set firewall filters for k8s master
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_list:
+    - "6443/tcp"
+    - "2379-2380/tcp"
+    - "10250/tcp"
+    - "10251/tcp"
+    - "10252/tcp"
+    - "10255/tcp"
+
+- name:  Add the Bridge netfilter
+  modprobe:
+      name: br_netfilter
+      state: present
+
+- name: Set bridge-nf-call-iptables
+  shell: echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+- set_fact:
+    kubeadm_extra_args: "{{ kubeadm_extra_args }} --pod-network-cidr=10.244.0.0/16"
+  when: cni == "flannel"
+
+- name: test if kubernetes is running
+  shell: kubectl get nodes
+  ignore_errors: True
+  register: kube_started
+
+- name: start kubernetes with extra arguments
+  shell: kubeadm init --apiserver-advertise-address "{{ K8S_MASTER_IP }}" "{{ kubeadm_extra_args }}"
+  when: kube_started.failed and kubeadm_extra_args != ""
+
+- name: start kubernetes with *no* extra arguments
+  shell: kubeadm init --apiserver-advertise-address "{{ K8S_MASTER_IP }}"
+  when: kube_started.failed and kubeadm_extra_args == ""
+
+- name: mkdir /root/.kube 
+  file:
+    path: /root/.kube
+    state: directory
+    mode: 0755
+
+- name: copy admin.conf to ~/.kube/config so kubectl can work as is
+  copy:
+    src:  /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+
+- name: Are we in a vagrant environment?
+  stat:
+    path: /vagrant
+  register: vagrant_p
+
+- name: make ~vagrant/.kube directory
+  file:
+    path:  /home/vagrant/.kube
+    state: directory
+    owner: vagrant
+    group: vagrant
+    mode: 0775
+  when: vagrant_p.stat.exists
+
+- name: copy admin.conf to ~vagrant/.kube/config so kubectl can work as is
+  copy:
+    src:  /etc/kubernetes/admin.conf
+    dest: /home/vagrant/.kube/config
+    owner: vagrant
+    group: vagrant
+    remote_src: yes
+  when: vagrant_p.stat.exists
+
+- name: stash admin.conf to /vagrant/admin.conf
+  copy:
+    src:  /etc/kubernetes/admin.conf
+    dest: /vagrant/admin.conf
+    owner: vagrant
+    group: vagrant
+    remote_src: yes
+  when: vagrant_p.stat.exists
+
+- name: fetch admin.conf for the minions
+  fetch:
+    src:  /etc/kubernetes/admin.conf
+    dest: "{{ playbook_dir }}/"
+    flat: yes
+
+- name: Start the CNI
+  include_tasks: "{{ cni }}.yaml"
+  when: cni != ""

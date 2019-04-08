@@ -1,0 +1,83 @@
+---
+- name: initial configuration
+  hosts:        all
+  become:           true
+  become_user:      root
+  become_method:    sudo
+
+  tasks:
+    - name: read servers.yaml into servers list.
+      include_vars:
+        file: servers.yaml
+        name: servers
+
+    - name: Set hostname
+      hostname: name="{{ inventory_hostname }}"
+
+    - name: set the root password, if it is given
+      user:
+        name:  root
+        password: "{{ root_password |password_hash('sha512') }}"
+      when: root_password is defined
+
+    - name: Permit Root Login
+      lineinfile:
+        dest=/etc/ssh/sshd_config
+        regexp="^#PermitRootLogin"
+        line="PermitRootLogin yes"
+      when: root_password is defined
+
+    - name: Restart sshd
+      service:
+        name:  sshd
+        state: restarted
+      when: root_password is defined
+
+#    - name: Copy over /etc/resolv.conf
+#      copy:
+#        src:   /etc/resolv.conf
+#        dest:  /etc/resolv.conf
+#        owner: root
+#        group: root
+#        mode:  u=rw,g=r,o=r
+
+    - name: overlay /etc/resolv.conf
+      lineinfile:
+        dest=/etc/resolv.conf
+        regexp="^{{ item }}"
+        line="{{ item }}"
+      with_items: "{{ lookup('file', '/etc/resolv.conf').split('\n') }}"
+      
+    - name: Populate /etc/hosts from servers.yaml
+      lineinfile:
+        dest=/etc/hosts
+        regexp='^{{ item | json_query(ipaddr) + ' ' }}'
+        line='{{ item | json_query(ipaddr) }} {{ item | json_query(hostname_fld) }}'
+      with_items: '{{ servers | json_query(server) }}'
+      
+      vars:
+        server: 'servers[*]'
+        ipaddr: 'network[0].":ip"'
+        hostname_fld: 'name'
+
+    - name: install a few basic tools
+      yum:
+        name:
+          - net-tools
+          - traceroute
+          - git
+          - lsof
+          - yum-utils
+          - epel-release
+          - ruby
+
+    - name: penultimate check, is postconfig-custom.yaml present
+      delegate_to: 127.0.0.1
+      run_once: true
+      stat:
+        path: "{{ playbook_dir }}/postconfig-custom.yaml"
+      register: stat_result
+
+    - name: ultimately, if present, execute it
+      include_tasks: postconfig-custom.yaml
+      when: stat_result.stat.exists

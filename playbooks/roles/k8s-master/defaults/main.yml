@@ -1,0 +1,12 @@
+---
+# defaults file for master
+cni:                "flannel"
+cni_repo:           "raw.githubusercontent.com"
+kubeadm_extra_args: ""
+
+hub_userid:         "unspecified"
+hub_password:       'unspecified'
+hub_email:	    'unspecified'
+
+CONTRAIL_REPO:      'hub.juniper.net/contrail-nightly'
+CONTRAIL_RELEASE:   '5.1.0-0.555'

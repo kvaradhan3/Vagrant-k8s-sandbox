@@ -1,0 +1,55 @@
+---
+# tasks file for contrail+k8s-master
+
+- shell: /usr/bin/hostname
+  register: hn
+  delegate_to: 127.0.0.1
+  run_once:    true
+  
+- set_fact:
+    hostname: "{{ hn.stdout_lines[0] }}"
+
+- shell: /usr/bin/dirname $( /usr/bin/pwd )
+  register: cwd
+  delegate_to: 127.0.0.1
+  run_once:    true
+  
+- set_fact:
+    directory: "{{ cwd.stdout_lines[0] }}"
+
+- name: install tools for contrail
+  yum:
+    name:
+      - epel-release
+      - git
+      - ansible
+      - net-tools
+      - python-pip
+      - python-urllib3
+      - python-requests
+
+- name: mkdir /root/deployer
+  file:
+    path:   /root/deployer
+    state:  directory
+    mode:   0755
+
+- name: download contrail-ansible-deployer
+  git:
+    repo: https://github.com/Juniper/contrail-ansible-deployer.git
+    dest: /root/deployer/contrail-ansible-deployer
+    force: yes
+
+- name: create a valid instances.yaml file
+  template:
+    src:  instances-yaml.j2
+    dest: /root/deployer/contrail-ansible-deployer/config/instances.yaml
+
+- name: Deploy contrail in 3 steps
+  shell: "ansible-playbook -i inventory/ playbooks/{{ item }}.yml"
+  args:
+    chdir: /root/deployer/contrail-ansible-deployer
+  with_items:
+    - configure_instances
+    - install_k8s
+    - install_contrail

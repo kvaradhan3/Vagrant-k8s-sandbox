@@ -1,0 +1,6 @@
+---
+# tasks file for gateway
+
+# for now, we make the gateway a minion.
+- include_role:
+    name: k8s-minions

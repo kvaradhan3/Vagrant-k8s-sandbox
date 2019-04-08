@@ -1,0 +1,11 @@
+---
+# vars file for master
+hub_userid:         'unspecified'
+hub_password:       'unspecified'
+hub_email:          'unspecified'
+
+#CONTRAIL_REPO:      'hub.juniper.net/contrail'
+#CONTRAIL_RELEASE:   '5.0.2-0.360'
+
+CONTRAIL_REPO:     'hub.juniper.net/contrail-nightly'
+CONTRAIL_RELEASE:  '5.1.0-0.555'

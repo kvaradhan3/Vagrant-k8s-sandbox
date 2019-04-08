@@ -1,0 +1,10 @@
+
+galaxy_info:
+  author: Kannan Varadhan
+  description: Common Configuration for a k8s master/minion
+  license: BSD
+  min_ansible_version: 2.4
+  galaxy_tags:
+    k8s-common
+
+dependencies: []
