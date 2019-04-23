@@ -112,12 +112,15 @@ so are safe to use together.
 ```
 
 So we now have 4 identical VMs, and we can try and setup kunernetes
-in one or more of them.  Setting up kubernetes now is:
+in one or more of them.  There are two ways to setup kubernetes and contrail.
+
+Setting up kubernetes in the traditional way, with any CNI now is:
 
 ```
 % ansible-playbook -i .vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory -e cni=contrail kubernetes.yaml
 ```
 The default CNI is flannel.  You can also start kubernetes w/no CNI by specifying `-e cni=`.
+The contrail CNI in this model would be installed as a daemon-set, so it naturally fits the k8s model of deployment.
 
 If you are using contrail as a CNI, you need to provide some additional
 parameters on where contrail can fetch its containers.  These are
@@ -134,17 +137,23 @@ CONTRAIL_REPO:      'hub.juniper.net/contrail'
 CONTRAIL_RELEASE:   '5.0.2-0.360'
 ```
 
-Alternately, skip the ansible based kubernetes setup.
-postconfig-custom.yaml, along with instances.yaml.j2, is configured to
-prime the contrail-ansible-deployer model.  To use this, you need to
+This model of deploying contrail as a CNI however does not work as well as could be expected.
+
+An alternate way of doing this is the traditional contrail-ansible-deplpyer model of contrail.
+Here, we skip the ansible based kubernetes setup, and instead use the contrail+k8s playbook as
 
 1. rerun vagrant up with provisioners.
 	`vagrant --root-password=<password> up --provision`
-2. Connect to the master, 
+2. Setup contrail and k8s as:
+        `ansible-playbook -i .vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory playbooks/contrail+k8s.yaml`
+	
+At a later point, to update the inventory,
+1. Connect to the master, 
 	`vagrant ssh k8s-master`
 2a. on the master, become root
 	`sudo -s`
 2b. cd into the prepared deployer directory
 	`cd ~/deployer`
-2c. Run the deployer script there,
+2c. update the instances.yaml file in that directory, and then
+2d. Run the deployer script there,
 	`./deploy-contrail.sh`
