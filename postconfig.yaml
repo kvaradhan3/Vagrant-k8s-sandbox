@@ -71,6 +71,50 @@
           - epel-release
           - ruby
 
+    - name: upgrade all packages
+      yum:  name=* state=latest
+
+#    - name: for docker, create /etc/docker
+#      file:
+#        path: /etc/docker
+#        state: directory
+
+#    - name: create daemon.json
+#      file:
+#        path: "/etc/docker/daemon.json"
+#        state: touch
+#
+#    - name: slurp existing daemon.json
+#      slurp:
+#        src: /etc/docker/daemon.json
+#      register: docker_conf
+#
+#    - set_fact:
+#        docker_parms: { "insecure-registries" : [] }
+#
+#    - set_fact:
+#        docker_parms: "{{ docker_conf.content|b64decode|from_json | default([]) }}"
+#      when: docker_conf.content != ""
+#
+#    - set_fact:
+#        insecure: "{{ docker_parms['insecure-registries'] | union(['ci-repo.englab.juniper.net:5010']) }}"
+#
+#    - name: add ci-repo.englab.juniper.net:5010 to insecure list
+#      set_fact:
+#        docker_parms: '{{ docker_parms | combine({"insecure-registries": insecure}) }}'
+#
+#    - name: write back update daemon.json
+#      copy: 
+#        content: "{{ docker_parms | to_nice_json }}" 
+#        dest: /etc/docker/daemon.json
+#      
+#    - name: restart docker
+#      systemd:
+#        state: restarted
+#        daemon_reload: yes
+#        name: docker
+#      ignore_errors: yes
+#
     - name: penultimate check, is postconfig-custom.yaml present
       delegate_to: 127.0.0.1
       run_once: true
