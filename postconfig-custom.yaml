@@ -1,0 +1,31 @@
+---
+- name: initial configuration
+  hosts:        all
+  become:           true
+  become_user:      root
+  become_method:    sudo
+
+  tasks:
+    - name: Check for /etc/docker/daemon.json
+      local_action: stat path=/etc/docker/daemon.json
+      register: docker_config
+
+    - name: copy ssh identities
+      copy:
+        src: /root/.ssh
+        dest: /root
+        mode: 0600
+        directory_mode: 0700
+
+    - name: Copy daemon.json to remote host
+      copy:
+        src: /etc/docker/daemon.json
+        dest: /etc/docker/daemon.json
+      when: docker_config.exists == true
+      
+    - name: restart docker
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: docker
+      ignore_errors: yes
