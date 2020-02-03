@@ -1,0 +1,20 @@
+#! /bin/sh
+
+MASTER=192.168.1.254
+NODES="192.168.1.100 192.168.1.101 192.168.1.102 192.168.1.103 192.168.1.104 192.168.1.105"
+
+case $1 in
+all)            HOSTS="$MASTER $NODES"  ;   shift ;;
+master)         HOSTS=$MASTER           ;   shift ;;
+nodes|minions)  HOSTS=$NODES            ;   shift ;;
+*)              HOSTS="$MASTER $NODES"  ;;
+esac
+
+case $# in
+0)  echo $HOSTS ;;
+*)  for i in $HOSTS ; do
+        echo "+ on $i: $@"
+        ssh $i "$@"
+    done
+    ;;
+esac
