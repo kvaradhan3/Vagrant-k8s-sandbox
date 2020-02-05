@@ -75,6 +75,9 @@
           - epel-release
           - ruby
 
+    - name: upgrade all packages
+      yum:  name=* state=latest
+
     - name: penultimate check, is postconfig-custom.yaml present
       delegate_to: 127.0.0.1
       run_once: true
