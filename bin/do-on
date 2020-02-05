@@ -7,7 +7,7 @@ case $1 in
 all)            HOSTS="$MASTER $NODES"  ;   shift ;;
 master)         HOSTS=$MASTER           ;   shift ;;
 nodes|minions)  HOSTS=$NODES            ;   shift ;;
-*)              HOSTS="$MASTER $NODES"  ;;
+*)              HOSTS="$1"              ;   shift ;;
 esac
 
 case $# in
