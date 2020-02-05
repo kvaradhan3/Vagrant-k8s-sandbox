@@ -1,0 +1,52 @@
+#! /bin/sh
+#
+# now contrail
+#
+MASTER=$(do-on master)
+NODES=$(do-on minions)
+
+HOSTIP=$(sed -n "/$MASTER/"'s/[ \t].*$//p' /etc/hosts)
+REPO=ci-repo.englab.juniper.net:5010
+REL=1912
+SUB=32
+
+git clone -b R$REL https://github.com/Juniper/contrail-container-builder
+cd contrail-container-builder
+
+cat > common.env <<EOF
+HOST_IP=$HOSTIP
+
+CLOUD_ORCHESTRATOR=kubernetes
+CONTRAIL_CONTAINER_TAG="$REL.$SUB"
+CONTRAIL_REGISTRY="$REPO"
+AUTH_MODE='noauth'
+AAA_MODE='no-auth'
+CLOUD_ADMIN_ROLE=admin
+GLOBAL_READ_ONLY_ROLE=
+SELFSIGNED_CERTS_WITH_IPS=True
+VENDOR_NAME='Juniper'
+VENDOR_DOMAIN='net.juniper.contrail'
+PHYSICAL_INTERFACE=eth1
+EOF
+
+./kubernetes/manifests/resolve-manifest.sh ./kubernetes/manifests/contrail-standalone-kubernetes.yaml > contrail-istio-k8s.yml
+patch < ../data/contrail-istio-k8s.pch
+vi contrail-istio-k8s.yml
+kubectl apply -f contrail-istio-k8s.yml
+
+MASTER=$(do-on master)
+NODES=$(do-on minions)
+kubectl label nodes $MASTER node-role.opencontrail.org/controller=true
+kubectl label nodes $MASTER node-role.opencontrail.org/webui=true
+kubectl label nodes $MASTER node-role.opencontrail.org/control=true
+kubectl label nodes $MASTER node-role.opencontrail.org/analytics=true
+kubectl label nodes $MASTER node-role.opencontrail.org/analytics_alarm=true
+kubectl label nodes $MASTER node-role.opencontrail.org/analyticsdb=true
+kubectl label nodes $MASTER node-role.opencontrail.org/config=true
+kubectl label nodes $MASTER node-role.opencontrail.org/configdb=true
+#kubectl label nodes $MASTER node-role.opencontrail.org/agent=true
+
+for i in $NODES ; do
+    kubectl label nodes $i node-role.opencontrail.org/agent=true
+done
+

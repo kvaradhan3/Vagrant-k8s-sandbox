@@ -1,0 +1,21 @@
+#! /bin/sh
+
+do-on all kubeadm config images pull
+
+#
+# start master
+#
+do-on master kubeadm init --pod-network-cidr 10.32.0.0/12
+do-on master mkdir -p $HOME/.kube
+do-on master cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+do-on master chown $(id -u):$(id -g) $HOME/.kube/config
+
+#
+# stash kube admin.conf
+#
+scp root@10.84.14.106:/root/.kube/config /root/.kube/config
+
+#
+# setup minions
+#
+do-on minions $(kubeadm token create --print-join-command)
