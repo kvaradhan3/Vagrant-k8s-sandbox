@@ -1,0 +1,3 @@
+#! /usr/bin/env ruby
+require 'yaml'
+YAML.load_file('servers.yaml')['servers'].map{|s| s['name']}.map{|i| print("#{i} ")}
