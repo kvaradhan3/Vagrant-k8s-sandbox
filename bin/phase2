@@ -13,7 +13,8 @@ do-on master chown $(id -u):$(id -g) $HOME/.kube/config
 #
 # stash kube admin.conf
 #
-scp root@10.84.14.106:/root/.kube/config /root/.kube/config
+rm -f $HOME/.kube/config
+scp root@$(do-on master):$HOME/.kube/config $HOME/.kube/config
 
 #
 # setup minions
