@@ -1,0 +1,6 @@
+- name: copy ssh identities
+  copy:
+    src: /root/.ssh
+    dest: /root
+    mode: 0600
+    directory_mode: 0700
