@@ -1,7 +1,13 @@
 #! /bin/sh
 
-MASTER=192.168.1.254
-NODES="192.168.1.100 192.168.1.101 192.168.1.102 192.168.1.103 192.168.1.104 192.168.1.105"
+servers() {
+  ruby -ryaml \
+       -e 'YAML.load_file("servers.yaml")["servers"].map{|s| s["name"]}.map{|i| print("#{i} ")}
+'
+}
+
+MASTER=$(servers | awk '{print $1}')
+NODES=$(servers | cut -d' ' -f2-)
 
 case $1 in
 all)            HOSTS="$MASTER $NODES"  ;   shift ;;
