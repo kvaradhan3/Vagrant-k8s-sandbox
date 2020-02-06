@@ -10,10 +10,11 @@ REPO=ci-repo.englab.juniper.net:5010
 REL=1912
 SUB=32
 
-git clone -b R$REL https://github.com/Juniper/contrail-container-builder
-cd contrail-container-builder
+(
+  git clone -b R$REL https://github.com/Juniper/contrail-container-builder
+  cd contrail-container-builder
 
-cat > common.env <<EOF
+  cat > common.env <<EOF
 HOST_IP=$HOSTIP
 
 CLOUD_ORCHESTRATOR=kubernetes
@@ -29,13 +30,12 @@ VENDOR_DOMAIN='net.juniper.contrail'
 PHYSICAL_INTERFACE=eth1
 EOF
 
-./kubernetes/manifests/resolve-manifest.sh ./kubernetes/manifests/contrail-standalone-kubernetes.yaml > contrail-istio-k8s.yml
-patch < ../data/contrail-istio-k8s.pch
-vi contrail-istio-k8s.yml
-kubectl apply -f contrail-istio-k8s.yml
+  ./kubernetes/manifests/resolve-manifest.sh ./kubernetes/manifests/contrail-standalone-kubernetes.yaml > contrail-istio-k8s.yml
+#patch < ../data/contrail-istio-k8s.pch
+  vi contrail-istio-k8s.yml
+  kubectl apply -f contrail-istio-k8s.yml
+)
 
-MASTER=$(do-on master)
-NODES=$(do-on minions)
 kubectl label nodes $MASTER node-role.opencontrail.org/controller=true
 kubectl label nodes $MASTER node-role.opencontrail.org/webui=true
 kubectl label nodes $MASTER node-role.opencontrail.org/control=true
