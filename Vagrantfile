@@ -32,16 +32,18 @@ Vagrant.configure(2) do |config|
           "--extra-vars", "root_password=#{root_password}",
       ]
     end
-#    ansible.groups = {}
-#    servers.each do |server|
-#      server["roles"].each do |r|
-#        if ansible.groups.has_key?(r)
-#          ansible.groups[r] << server["name"]
-#        else
-#          ansible.groups[r] = [ server["name"] ]
-#        end
-#      end
-#    end
+    ansible.groups = {}
+    servers.each do |server|
+      if server.has_key?("roles")
+        server["roles"].each do |r|
+          if ansible.groups.has_key?(r)
+            ansible.groups[r] << server["name"]
+          else
+            ansible.groups[r] = [ server["name"] ]
+          end
+        end
+      end
+    end
   end
  
   # Iterate through entries in YAML file
