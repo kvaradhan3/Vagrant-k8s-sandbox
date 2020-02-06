@@ -8,3 +8,5 @@ admin.conf
 typescript
 instances.yaml
 contrail-ansible-deployer
+00_LOGS
+contrail-container-builder
