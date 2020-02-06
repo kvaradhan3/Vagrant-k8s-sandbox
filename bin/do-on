@@ -20,7 +20,7 @@ case $# in
 0)  echo $HOSTS ;;
 *)  for i in $HOSTS ; do
         echo "+ on $i: $@"
-        ssh $i "$@"
+        ssh root@$i "$@"
     done
     ;;
 esac
