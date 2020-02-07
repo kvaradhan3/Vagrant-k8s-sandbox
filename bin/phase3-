@@ -1,0 +1,29 @@
+#! /bin/sh -x
+#
+# revert  contrail
+#
+MASTER=$(do-on master)
+NODES=$(do-on minions)
+
+HOSTIP=$(sed -n "/$MASTER/"'s/[ \t].*$//p' /etc/hosts)
+REPO=ci-repo.englab.juniper.net:5010
+REL=1912
+SUB=32
+
+kubectl delete -f contrail-container-builder/contrail-istio-k8s.yml
+
+kubectl label nodes $MASTER node-role.opencontrail.org/controller-
+kubectl label nodes $MASTER node-role.opencontrail.org/webui-
+kubectl label nodes $MASTER node-role.opencontrail.org/control-
+kubectl label nodes $MASTER node-role.opencontrail.org/analytics-
+kubectl label nodes $MASTER node-role.opencontrail.org/analytics_alarm-
+kubectl label nodes $MASTER node-role.opencontrail.org/analyticsdb-
+kubectl label nodes $MASTER node-role.opencontrail.org/config-
+kubectl label nodes $MASTER node-role.opencontrail.org/configdb-
+kubectl label nodes $MASTER node-role.opencontrail.org/agent-
+
+for i in $NODES ; do
+    kubectl label nodes $i node-role.opencontrail.org/agent-
+done
+
+kubectl annotate namespace default opencontrail.org/ip_fabric_snat-
