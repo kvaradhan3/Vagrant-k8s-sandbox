@@ -31,7 +31,7 @@ PHYSICAL_INTERFACE=eth1
 EOF
 
   ./kubernetes/manifests/resolve-manifest.sh ./kubernetes/manifests/contrail-standalone-kubernetes.yaml > contrail-istio-k8s.yml
-#patch < ../data/contrail-istio-k8s.pch
+  patch < ../data/contrail-istio-k8s.pch
   vi contrail-istio-k8s.yml
   kubectl apply -f contrail-istio-k8s.yml
 )
@@ -44,9 +44,10 @@ kubectl label nodes $MASTER node-role.opencontrail.org/analytics_alarm=true
 kubectl label nodes $MASTER node-role.opencontrail.org/analyticsdb=true
 kubectl label nodes $MASTER node-role.opencontrail.org/config=true
 kubectl label nodes $MASTER node-role.opencontrail.org/configdb=true
-#kubectl label nodes $MASTER node-role.opencontrail.org/agent=true
+kubectl label nodes $MASTER node-role.opencontrail.org/agent=true
 
 for i in $NODES ; do
     kubectl label nodes $i node-role.opencontrail.org/agent=true
 done
 
+kubectl annotate namespace default opencontrail.org/ip_fabric_snat=true
