@@ -5,11 +5,15 @@
 
 DEFAULT_RT=$(ruby -ryaml -e 'print(YAML.load_file("servers.yaml")["defaults"]["network"][:"default-gw"])')
 
-for i in $(do-on) ; do
-    ssh-keygen -R $i
-    ssh-keygen -R $(egrep $i /etc/hosts | cut -d' ' -f1)
-    ssh-copy-id root@$i
-done
+if [ "x$1" = 'x-s' ] ; then
+    : skip ssh known_host reset
+else
+    for i in $(do-on) ; do
+        ssh-keygen -R $i
+        ssh-keygen -R $(egrep $i /etc/hosts | cut -d' ' -f1)
+        ssh-copy-id root@$i
+    done
+fi
 
 echo '> Linux 3.10.0-1062.12.1.el7.x86_64'
 do-on all uname -rs
