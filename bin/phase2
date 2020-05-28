@@ -6,15 +6,16 @@ do-on all kubeadm config images pull
 # start master
 #
 do-on master kubeadm init --pod-network-cidr 10.32.0.0/12
-do-on master mkdir -p $HOME/.kube
-do-on master cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-do-on master chown $(id -u):$(id -g) $HOME/.kube/config
+do-on master mkdir -p '~/.kube'
+do-on master cp -f /etc/kubernetes/admin.conf '~/.kube/config'
+do-on master chown -R '$(id -u):$(id -g)' '~/.kube/config'
 
 #
 # stash kube admin.conf
 #
+mkdir -p $HOME/.kube
 rm -f $HOME/.kube/config
-scp root@$(do-on master):$HOME/.kube/config $HOME/.kube/config
+scp root@$(do-on master):~/.kube/config $HOME/.kube/config
 
 #
 # setup minions
