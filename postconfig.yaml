@@ -67,17 +67,28 @@
     - name: install a few basic tools
       yum:
         name:
-          - net-tools
-          - traceroute
-          - git
-          - lsof
           - yum-utils
           - epel-release
+          - git
           - ruby
+      when: (ansible_facts['os_family'] == "CentOS" or 
+             ansible_facts['os_family'] == "RedHat")
+
+    - name: Install a list of packages
+      apt:
+        update_cache: yes
+        autoclean:    yes
+        autoremove:   yes
+        package:
+        - git
+        - ruby
+      when: (ansible_facts['os_family'] == "Debian" or 
+             ansible_facts['os_family'] == "Ubuntu")
 
     - name: penultimate check, is postconfig-custom.yaml present
       delegate_to: 127.0.0.1
       run_once: true
+      become: false
       stat:
         path: "{{ playbook_dir }}/postconfig-custom.yaml"
       register: stat_result
