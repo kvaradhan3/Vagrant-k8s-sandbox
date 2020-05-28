@@ -1,30 +1,30 @@
 ---
 defaults:
-  box: centos-7
+  box: ubuntu/bionic64
   ram: 2048
   roles:
     - minions
   network:
     :netmask:    255.255.255.0
-    :bridge:     eno1
+    :bridge:     "en0: Wi-Fi (Wireless)"
     :type:       public_network
-    :default-gw: 192.168.1.254
+#    :default-gw: 192.168.1.254
 
 servers:
 - name: k8s-master
-  ram:  32768
+  ram:  4096
   cpus: 4
   roles:
     - master
   network:
     - :ip:         192.168.1.16
 
-- name: k8s-gateway
-  ram:  4096
-  roles:
-    - gateway
-  network:
-    - :ip:         192.168.1.1
+#- name: k8s-gateway
+#  ram:  4096
+#  roles:
+#    - gateway
+#  network:
+#    - :ip:         192.168.1.1
 
 - name: k8s-node-01
   network:
