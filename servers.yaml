@@ -11,6 +11,10 @@ defaults:
 #    :default-gw: 192.168.1.254
 
 servers:
+- name: control
+  network:
+    - :ip:         192.168.1.1
+  
 - name: k8s-master
   ram:  4096
   cpus: 4
@@ -28,9 +32,17 @@ servers:
 
 - name: k8s-node-01
   network:
-    - :ip:         192.168.1.32
+    - :ip:         192.168.1.31
 
 - name: k8s-node-02
   network:
+    - :ip:         192.168.1.32
+
+- name: k8s-node-03
+  network:
     - :ip:         192.168.1.33
+
+- name: k8s-node-04
+  network:
+    - :ip:         192.168.1.34
 
