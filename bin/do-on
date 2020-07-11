@@ -24,7 +24,7 @@ case $# in
 0)  echo $HOSTS ;;
 *)  for i in $HOSTS ; do
         echo "+ on $i: $@"
-        ssh root@$i "$@"
+        vagrant ssh $i -- sudo "$@"
     done
     ;;
 esac
