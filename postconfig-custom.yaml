@@ -1,4 +1,4 @@
-- name: copy ssh identities
+- name: copy ssh identities to root 
   copy:
     src: /Users/kvaradhan/.ssh/id_ed25519-vm
     dest: /root/.ssh/id_ed25519
@@ -9,6 +9,48 @@
     dest: /root/.ssh/id_ed25519.pub
     mode: 0600
     directory_mode: 0700
+
+- name: copy ssh identities to vagrant
+  become: false
+  copy:
+    src: /Users/kvaradhan/.ssh/id_ed25519-vm
+    dest: /home/vagrant/.ssh/id_ed25519
+    mode: 0600
+    directory_mode: 0700
+- become: false
+  copy:
+    src: /Users/kvaradhan/.ssh/id_ed25519-vm.pub
+    dest: /home/vagrant/.ssh/id_ed25519.pub
+    mode: 0600
+    directory_mode: 0700
+
+
+- name: Slurp public key to be used for passwordless ssh
+  delegate_to: 127.0.0.1
+  run_once:    true
+  become:      false
+  slurp:
+    src:       /Users/kvaradhan/.ssh/id_ed25519-vm.pub
+  register: pubkey
+
+- name: Update authorized_keys to root
+  lineinfile:
+    path: /root/.ssh/authorized_keys
+    regexp: "{{ pubkey['content'] | b64decode }}"
+    line: "{{ pubkey['content'] | b64decode }}"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Update authorized_keys to vagrant
+  become: false
+  lineinfile:
+    path: /home/vagrant/.ssh/authorized_keys
+    regexp: "{{ pubkey['content'] | b64decode }}"
+    line: "{{ pubkey['content'] | b64decode }}"
+    owner: vagrant
+    group: vagrant
+    mode: '0600'
 
 - name: copy nscacert.pem
   copy:
