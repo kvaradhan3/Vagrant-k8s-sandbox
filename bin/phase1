@@ -2,7 +2,6 @@
 #
 # some basic tools
 #
-data=/vagrant/data
 centos_hosts=
 debian_hosts=
 for i in $(do-on) ; do
@@ -12,6 +11,8 @@ for i in $(do-on) ; do
     *rhel*)     centos_hosts="$centos_hosts $i" ;;
     esac
 done
+: centos_hosts="$centos_hosts"
+: debian_hosts="$debian_hosts"
 
 on_centos() {
     do-on "$centos_hosts" "$@"
@@ -21,69 +22,102 @@ on_debian() {
 }
 
 COMMON_TOOLS="git traceroute lsof"
-CENTOS_TOOLS="epel-release yum-utils kernel-devel kernel-headers \
-              device-mapper-persistent-data lvm2"
-DEBIAN_TOOLS="apt-transport-https linux-headers-generic"
+CENTOS_TOOLS="epel-release yum-utils device-mapper-persistent-data lvm2"
+DEBIAN_TOOLS="apt-transport-https"
 
-CENTOS_DOCKER_REPO=https://download.docker.com/linux/centos/docker-ce.repo
-DEBIAN_KUBE_REPO=
+for h in $centos_hosts ; do
+    do-on $h yum install -y $COMMON_TOOLS $CENTOS_TOOLS
 
-do-on "$centos_hosts" yum install -y $COMMON_TOOLS $CENTOS_TOOLS
-do-on "$debian_hosts" apt install -y $COMMON_TOOLS $DEBIAN_TOOLS
+    ##
+    # Kernel upgrades
+    do-on $h yum install -y kernel-devel kernel-headers
 
-#
-# docker
-#
-do-on all mkdir /etc/docker
-do-on all cp $data/docker/daemon.json /etc/docker/daemon.json
+    ##
+    # docker
+    do-on $h mkdir /etc/docker
+    do-on $h cp /vagrant/data/docker/daemon.json /etc/docker/daemon.json
 
-do-on "$centos_hosts" yum-config-manager --add-repo $CENTOS_DOCKER_REPO
-do-on "$centos_hosts" yum install -y docker-ce containerd.io
+    do-on $h yum-config-manager --add-repo			\
+	  https://download.docker.com/linux/centos/docker-ce.repo
+    do-on $h yum install -y docker-ce containerd.io
 
-do-on "$debian_hosts" apt install -y docker.io
-do-on all systemctl start docker
-do-on all systemctl enable docker
+    do-on $h systemctl start docker
+    do-on $h systemctl enable docker
 
-#
-# k8s repos
-#
-#DEBIAN_K8S_REPO="http://apt.kubernetes.io/ kubernetes-xenial main"
-DEBIAN_K8S_REPO="http://packages.cloud.google.com/apt/ kubernetes-xenial main"
+    #
+    do-on $h cp /vagrant/data/yum.repos.d/kubernetes.repo /etc/yum.repos.d/
 
-do-on "$centos_hosts" cp $data/yum.repos.d/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
-do-on "$debian_hosts" curl https://packages.cloud.google.com/apt/doc/apt-key.gpg --output /tmp/apt-key.gpg
-do-on "$debian_hosts" apt-key add /tmp/apt-key.gpg
-do-on "$debian_hosts" apt-add-repository "\"deb $DEBIAN_K8S_REPO\""
-#do-on "$debian_hosts" cp $data/apt/apt.conf /etc/apt/apt.conf
-do-on "$debian_hosts" apt-get update
+    #
+    # kubernetes prep work
+    #
+    # disable SElinux
+    #
+    do-on $h setenforce 0
+    do-on $h sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 
+    ##
+    # no swap
+    do-on $h swapoff -a
+    do-on $h sed -i '/swap/s/^/#/' /etc/fstab
 
-#
-# kubernetes prep work
-#
-# disable SElinux on centos
-#
-do-on "$centos_hosts" setenforce 0
-do-on "$centos_hosts" sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+    do-on $h cp /vagrant/data/sysctl.d/k8s.conf /etc/sysctl.d/k8s.conf
+    do-on $h sysctl --system
 
-#
-# no swap
-#
-do-on all swapoff -a
-do-on all sed -i '/swap/s/^/#/' /etc/fstab
+    do-on $h yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+    do-on $h systemctl enable --now kubelet
 
-do-on all cp $data/sysctl.d/k8s.conf /etc/sysctl.d/k8s.conf
-do-on all sysctl --system
+    ##
+    # bring up to date
+    do-on $h yum update  -y
+done
 
-do-on "$centos_hosts" yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
-do-on "$debian_hosts" apt install -y kubelet kubeadm kubectl
-do-on "$debian_hosts" apt-mark hold  kubelet kubeadm kubectl
-do-on all systemctl enable --now kubelet
+for h in $debian_hosts; do
+    do-on $h apt install -y $COMMON_TOOLS $DEBIAN_TOOLS
 
-#
-# bring up to date
-#
-do-on "$centos_hosts" yum update  -y
-do-on "$debian_hosts" apt upgrade -y
-do-on "$debian_hosts" apt autoremove -y
+    ##
+    # Kernel upgrades
+    do-on $h apt install -y linux-headers-generic
+    
+    ##
+    # docker
+    do-on $h mkdir /etc/docker
+    do-on $h cp /vagrant/data/docker/daemon.json /etc/docker/daemon.json
+    do-on $h apt install -y docker.io
+
+    do-on $h systemctl start docker
+    do-on $h systemctl enable docker
+
+    ##
+    # k8s repos
+    #DEBIAN_K8S_REPO="http://apt.kubernetes.io/ kubernetes-xenial main"
+    DEBIAN_K8S_REPO="http://packages.cloud.google.com/apt/ kubernetes-xenial main"
+
+    do-on $h curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+              --output /tmp/apt-key.gpg
+    do-on $h apt-key add /tmp/apt-key.gpg
+    do-on $h apt-add-repository "\"deb $DEBIAN_K8S_REPO\""
+    #do-on $h cp /vagrant/data/apt/apt.conf /etc/apt/apt.conf
+    do-on $h apt-get update
+
+    ##
+    # kubernetes prep work
+    do-on $h swapoff -a
+    do-on $h sed -i '/swap/s/^/#/' /etc/fstab
+
+    do-on $h cp /vagrant/data/sysctl.d/k8s.conf /etc/sysctl.d/k8s.conf
+    do-on $h sysctl --system
+
+    do-on $h apt install -y kubelet kubeadm kubectl
+    do-on $h apt-mark hold  kubelet kubeadm kubectl
+    do-on $h systemctl enable --now kubelet
+
+    ##
+    # bring up to date
+    do-on $h apt upgrade -y
+    do-on $h apt autoremove -y
+    sleep 5
+done
+
 vagrant reload
+vagrant status
+
