@@ -26,10 +26,37 @@
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       with_items:
-        - { regexp: "^#PermitRootLogin", line: "PermitRootLogin yes" }
+        - { regexp: "^#PermitRootLogin .*", line: "PermitRootLogin yes" }
         - { regexp: "^#PasswordAuthentication yes", line: "PasswordAuthentication yes" }
-        - { regexp: "^PasswordAuthentication no", line: "#PasswordAuthentication no" }
+        - { regexp: "^PasswordAuthentication no", line: "PasswordAuthentication yes" }
       when: root_password is defined
+
+    - name: ssh IdentitiesOnly for root
+      blockinfile:
+        create: yes
+        owner: root
+        group: root
+        mode:  u=rw,g=,o=
+        path: /root/.ssh/config
+        marker: "# {mark} ANSIBLE MANAGED BLOCK: ssh IdentitiesOnly"
+        block: |
+          Host *
+          IdentitiesOnly yes
+
+
+    - name: ssh IdentitiesOnly for vagrant
+      become: false
+      blockinfile:
+        create: yes
+        owner: vagrant
+        group: vagrant
+        mode:  u=rw,g=,o=
+        path: /home/vagrant/.ssh/config
+        marker: "# {mark} ANSIBLE MANAGED BLOCK: ssh IdentitiesOnly"
+        block: |
+          Host *
+          IdentitiesOnly yes
+
 
     - name: Restart sshd
       service:
