@@ -5,7 +5,7 @@ do-on all kubeadm config images pull
 #
 # start master
 #
-do-on master kubeadm init --pod-network-cidr 10.32.0.0/12
+do-on master kubeadm init --pod-network-cidr 10.32.0.0/12 --apiserver-advertise-address=192.168.1.16
 do-on master mkdir -p '~/.kube'
 do-on master cp -f /etc/kubernetes/admin.conf '~/.kube/config'
 do-on master chown -R '$(id -u):$(id -g)' '~/.kube/config'
